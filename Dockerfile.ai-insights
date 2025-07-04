@@ -1,0 +1,65 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install specific dependencies for AI insight services
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn \
+    pydantic \
+    openai \
+    requests \
+    httpx \
+    asyncio
+
+# Copy application files and helper modules
+COPY marketInsight-api.py .
+COPY sentimentInsight-api.py .
+COPY productInsight-api.py .
+COPY financialInsight-api.py .
+COPY perplexity_sentiment_helper.py .
+COPY sentiment_schema.json .
+COPY .env .
+
+# Expose ports for all AI services
+EXPOSE 8010 8020 8030 8040
+
+# Health check script for multiple services
+COPY <<EOF /app/health_check.sh
+#!/bin/bash
+curl -f http://localhost:8010/health && \
+curl -f http://localhost:8020/health && \
+curl -f http://localhost:8030/health && \
+curl -f http://localhost:8040/health
+EOF
+
+RUN chmod +x /app/health_check.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=15s --start-period=10s --retries=3 \
+    CMD /app/health_check.sh || exit 1
+
+# Start script to run all AI services
+COPY <<EOF /app/start_ai_services.sh
+#!/bin/bash
+python marketInsight-api.py &
+python sentimentInsight-api.py &
+python productInsight-api.py &
+python financialInsight-api.py &
+wait
+EOF
+
+RUN chmod +x /app/start_ai_services.sh
+
+# Run all AI services
+CMD ["/app/start_ai_services.sh"]
