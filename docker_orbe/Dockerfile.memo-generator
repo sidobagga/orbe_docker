@@ -1,0 +1,46 @@
+FROM python:3.11-slim
+
+# Install system dependencies for PDF generation
+RUN apt-get update && apt-get install -y \
+    curl \
+    fonts-liberation \
+    fonts-dejavu-core \
+    fontconfig \
+    libfontconfig1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install specific dependencies for memo generation
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn \
+    pydantic \
+    openai \
+    fpdf \
+    python-docx \
+    matplotlib \
+    numpy \
+    httpx
+
+# Copy application files
+COPY memoGenerator-api.py .
+COPY .env .
+
+# Create directories for generated files
+RUN mkdir -p /app/generated_memos && chmod 777 /app/generated_memos
+
+# Expose port
+EXPOSE 8070
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8070/health || exit 1
+
+# Run the application
+CMD ["python", "memoGenerator-api.py"]

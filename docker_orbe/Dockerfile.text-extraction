@@ -1,0 +1,54 @@
+FROM python:3.11-slim
+
+# Install system dependencies for document processing and OCR
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    libtesseract-dev \
+    poppler-utils \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libfontconfig1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional packages specific to text extraction
+RUN pip install --no-cache-dir \
+    PyPDF2 \
+    PyMuPDF \
+    python-docx \
+    python-pptx \
+    mammoth \
+    openpyxl \
+    pytesseract \
+    Pillow \
+    markdownify \
+    httpx \
+    tabulate
+
+# Copy application files
+COPY lbo-textExtraction-api.py .
+COPY .env .
+
+# Create temp directory for file processing
+RUN mkdir -p /tmp/uploads && chmod 777 /tmp/uploads
+
+# Expose port
+EXPOSE 8061
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8061/health || exit 1
+
+# Run the application
+CMD ["python", "lbo-textExtraction-api.py"]
