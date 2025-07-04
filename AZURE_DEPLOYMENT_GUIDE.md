@@ -1,4 +1,4 @@
-# Azure Container Deployment Guide
+# Azure Container Deployment Guide (Once everything's up and running...)
 
 ## Prerequisites
 
