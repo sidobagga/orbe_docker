@@ -6,9 +6,9 @@ services:
     image: postgres:15-alpine
     container_name: lbo-postgres
     environment:
-      POSTGRES_DB: finmetrics
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Admin0rbE
+      POSTGRES_DB: ${POSTGRES_DB:-finmetrics}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
       - "5432:5432"
     volumes:
@@ -41,7 +41,9 @@ services:
 
   # LBO API Service
   lbo-api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.lbo-api
     container_name: lbo-api
     ports:
       - "8000:8000"
@@ -49,7 +51,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=Admin0rbE
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - DB_NAME=finmetrics
       - REDIS_URL=redis://redis:6379
       - FMP_API_KEY=${FMP_API_KEY}
@@ -71,9 +73,9 @@ services:
 
   # LBO Text Extraction Service
   lbo-text-extraction:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.text-extraction
+      dockerfile: Dockerfile.text-extraction
     container_name: lbo-text-extraction
     ports:
       - "8061:8061"
@@ -94,9 +96,9 @@ services:
 
   # LBO Analysis Service
   lbo-analysis:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.analysis
+      dockerfile: Dockerfile.analysis
     container_name: lbo-analysis
     ports:
       - "8001:8001"
@@ -104,7 +106,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=Admin0rbE
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - DB_NAME=finmetrics
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
@@ -125,9 +127,9 @@ services:
 
   # Unified Financial API Service
   unified-api:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.unified-api
+      dockerfile: Dockerfile.unified-api
     container_name: unified-api
     ports:
       - "8080:8080"
@@ -135,7 +137,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=Admin0rbE
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - DB_NAME=finmetrics
       - FMP_API_KEY=${FMP_API_KEY}
     depends_on:
@@ -153,9 +155,9 @@ services:
 
   # VC Track Text Extraction Service
   vc-text-extraction:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.text-extraction-vc
+      dockerfile: Dockerfile.text-extraction-vc
     container_name: vc-text-extraction
     ports:
       - "8060:8060"
@@ -176,9 +178,9 @@ services:
 
   # VC Track Analysis Service
   vc-analysis:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.analysis-vc
+      dockerfile: Dockerfile.analysis-vc
     container_name: vc-analysis
     ports:
       - "8005:8005"
@@ -200,9 +202,9 @@ services:
 
   # AI Insights Services (Market, Sentiment, Product, Financial)
   ai-insights:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.ai-insights
+      dockerfile: Dockerfile.ai-insights
     container_name: ai-insights
     ports:
       - "8010:8010"  # Market Insight
@@ -228,9 +230,9 @@ services:
 
   # Sector News Service
   sector-news:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.sector-news
+      dockerfile: Dockerfile.sector-news
     container_name: sector-news
     ports:
       - "8050:8050"
@@ -248,9 +250,9 @@ services:
 
   # Memo Generator Service
   memo-generator:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.memo-generator
+      dockerfile: Dockerfile.memo-generator
     container_name: memo-generator
     ports:
       - "8070:8070"
@@ -273,9 +275,9 @@ services:
 
   # Chatbot Service
   chatbot:
-    build: 
+    build:
       context: .
-      dockerfile: docker/Dockerfile.chatbot
+      dockerfile: Dockerfile.chatbot
     container_name: chatbot
     ports:
       - "8090:8090"
@@ -283,7 +285,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=Admin0rbE
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - DB_NAME=orbe_dev
       - GROQ_API_KEY=${GROQ_API_KEY}
     depends_on:

@@ -1,0 +1,78 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Create test environment file
+      run: |
+        echo "POSTGRES_DB=finmetrics_test" > .env
+        echo "POSTGRES_USER=postgres" >> .env
+        echo "POSTGRES_PASSWORD=test_password" >> .env
+        echo "FMP_API_KEY=test_key" >> .env
+        echo "OPENAI_API_KEY=test_key" >> .env
+        echo "HUGGINGFACE_API_KEY=test_key" >> .env
+        echo "PERPLEXITY_API_KEY=test_key" >> .env
+        echo "GROQ_API_KEY=test_key" >> .env
+    
+    - name: Build Docker images
+      run: |
+        docker-compose build lbo-api
+        docker-compose build lbo-text-extraction
+        docker-compose build lbo-analysis
+        docker-compose build unified-api
+        docker-compose build vc-text-extraction
+        docker-compose build vc-analysis
+        docker-compose build ai-insights
+        docker-compose build sector-news
+        docker-compose build memo-generator
+        docker-compose build chatbot
+    
+    - name: Start services
+      run: |
+        docker-compose up -d postgres redis
+        sleep 30
+    
+    - name: Run health checks
+      run: |
+        docker-compose ps
+        docker-compose logs postgres
+        docker-compose logs redis
+    
+    - name: Test database connection
+      run: |
+        docker-compose exec -T postgres pg_isready -U postgres
+    
+    - name: Test Redis connection
+      run: |
+        docker-compose exec -T redis redis-cli ping
+    
+    - name: Clean up
+      run: |
+        docker-compose down
+        docker system prune -f
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run hadolint on Dockerfiles
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile.*
+        recursive: true
+        ignore: DL3008,DL3015
