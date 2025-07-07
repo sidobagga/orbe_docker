@@ -88,9 +88,8 @@ GROQ_API_KEY=your_groq_api_key
 |---------|------|-------------|
 | PostgreSQL | 5432 | Database |
 | Redis | 6379 | Cache |
-| LBO API | 8000 | Main API |
-| LBO Analysis | 8001 | LBO Analysis |
-| VC Analysis | 8005 | VC Analysis |
+| VC Analysis | 8000 | VC Analysis |
+| LBO Analysis | 8001 | PE Analysis |
 | AI Market Insights | 8010 | Market Analysis |
 | AI Product Insights | 8020 | Product Analysis |
 | AI Financial Insights | 8030 | Financial Analysis |
@@ -101,6 +100,8 @@ GROQ_API_KEY=your_groq_api_key
 | Memo Generator | 8070 | Memo Creation |
 | Unified API | 8080 | Consolidated API |
 | Chatbot | 8090 | Chat Interface |
+| LBO API | 8100 | LBO API |
+
 
 ## Development
 
