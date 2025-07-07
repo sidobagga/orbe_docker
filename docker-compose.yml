@@ -1,0 +1,309 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: lbo-postgres
+    environment:
+      POSTGRES_DB: finmetrics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Admin0rbE
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./orbe_dev_schema.sql:/docker-entrypoint-initdb.d/02-orbe-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - lbo-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: lbo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - lbo-network
+
+  # LBO API Service
+  lbo-api:
+    build: .
+    container_name: lbo-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Admin0rbE
+      - DB_NAME=finmetrics
+      - REDIS_URL=redis://redis:6379
+      - FMP_API_KEY=${FMP_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # LBO Text Extraction Service
+  lbo-text-extraction:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.text-extraction
+    container_name: lbo-text-extraction
+    ports:
+      - "8061:8061"
+    environment:
+      - MAX_FILE_SIZE=104857600  # 100MB
+      - DOWNLOAD_TIMEOUT=120
+      - OCR_ENABLED=true
+      - MAX_PAGES_TO_PROCESS=100
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8061/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # LBO Analysis Service
+  lbo-analysis:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.analysis
+    container_name: lbo-analysis
+    ports:
+      - "8001:8001"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Admin0rbE
+      - DB_NAME=finmetrics
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lbo-text-extraction:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # Unified Financial API Service
+  unified-api:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.unified-api
+    container_name: unified-api
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Admin0rbE
+      - DB_NAME=finmetrics
+      - FMP_API_KEY=${FMP_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # VC Track Text Extraction Service
+  vc-text-extraction:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.text-extraction-vc
+    container_name: vc-text-extraction
+    ports:
+      - "8060:8060"
+    environment:
+      - MAX_FILE_SIZE=104857600  # 100MB
+      - DOWNLOAD_TIMEOUT=120
+      - OCR_ENABLED=true
+      - MAX_PAGES_TO_PROCESS=100
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8060/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # VC Track Analysis Service
+  vc-analysis:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.analysis-vc
+    container_name: vc-analysis
+    ports:
+      - "8005:8005"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+    depends_on:
+      vc-text-extraction:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # AI Insights Services (Market, Sentiment, Product, Financial)
+  ai-insights:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.ai-insights
+    container_name: ai-insights
+    ports:
+      - "8010:8010"  # Market Insight
+      - "8020:8020"  # Product Insight
+      - "8030:8030"  # Financial Insight
+      - "8040:8040"  # Sentiment Insight
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+    depends_on:
+      vc-analysis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/health_check.sh"]
+      interval: 45s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # Sector News Service
+  sector-news:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.sector-news
+    container_name: sector-news
+    ports:
+      - "8050:8050"
+    environment:
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # Memo Generator Service
+  memo-generator:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.memo-generator
+    container_name: memo-generator
+    ports:
+      - "8070:8070"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - memo_data:/app/generated_memos
+    depends_on:
+      ai-insights:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8070/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+  # Chatbot Service
+  chatbot:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile.chatbot
+    container_name: chatbot
+    ports:
+      - "8090:8090"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Admin0rbE
+      - DB_NAME=orbe_dev
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lbo-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  memo_data:
+
+networks:
+  lbo-network:
+    driver: bridge

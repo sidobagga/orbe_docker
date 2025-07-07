@@ -1,0 +1,101 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README*
+WORKFLOW*
+LBO-*-README.md
+TEST_DOCUMENTS_README.md
+
+# Test files
+test_*.py
+test_*.csv
+*_test.py
+test_files/
+*.zip
+
+# Debug files
+debug_*.py
+clear_redis_cache.py
+
+# Development files
+*.log
+logs/
+last_refresh.txt
+Untitled*
+
+# Other services (only include LBO API dependencies)
+analysis-api.py
+financialInsight-api.py
+marketInsight-api.py
+memoGenerator-api.py
+productInsight-api.py
+sectorNews-api.py
+sentimentInsight-api.py
+textExtraction-api.py
+chatbot.py
+unified*.py
+lbo_document_api.py
+lbo-analysis-api.py
+lbo-textExtraction-api.py
+pe-analysis-api.py
+financialMetrics-api-clean.py
+lbo_enhanced_api.py
+lbo_document_engine.py
+
+# Schema files not needed for LBO API
+*-schema.json
+sentiment_schema.json
+analysis-schema.json
+financial-schema.json
+
+# Example files
+example_*.py
+lbo-api-example.py
+show_local_json.py
+
+# Data files
+*.csv
+*.json
+*.xml
+orbearch.xml
+aapl_lbo.json
+index_data.json
+
+# Helper files not needed
+start_lbo_services.py
+index_builder.py
+perplexity_sentiment_helper.py
+
+# Summary files
+*_SUMMARY.md
+*_CONFIGURATION.md
+aap_lbo_issue_analysis.md
+financial-metrics_readme.md
+orbechat_readme.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

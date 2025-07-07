@@ -21,10 +21,15 @@ RUN pip install --no-cache-dir \
     pydantic \
     requests \
     asyncio \
-    sqlalchemy
+    sqlalchemy \
+    pandas \
+    numpy \
+    redis \
+    httpx
 
 # Copy application files
 COPY unified_api_v3.py .
+COPY sql_helpers.py .
 COPY .env .
 
 # Expose port

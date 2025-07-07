@@ -12,31 +12,28 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install additional packages specific to analysis
+# Install additional packages specific to document LBO API
 RUN pip install --no-cache-dir \
-    openai \
+    fastapi \
+    uvicorn \
     pydantic \
     asyncio \
     httpx \
-    psycopg2-binary \
-    sqlalchemy \
-    redis
+    pandas \
+    numpy \
+    requests
 
 # Copy application files
-COPY lbo-analysis-api.py .
-COPY lbo-analysis-schema.json .
-COPY models.py .
-COPY schemas.py .
-COPY services/ ./services/
-COPY defaults.py .
+COPY lbo_document_api.py .
+COPY lbo_document_engine.py .
 COPY .env .
 
 # Expose port
-EXPOSE 8001
+EXPOSE 8002
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/health || exit 1
+    CMD curl -f http://localhost:8002/health || exit 1
 
 # Run the application
-CMD ["python", "lbo-analysis-api.py"]
+CMD ["python", "lbo_document_api.py"]
