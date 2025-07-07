@@ -60,8 +60,8 @@ docker-compose exec redis redis-cli ping && echo " ✓ Redis"
 ### Core Services
 - **PostgreSQL Database** (Port 5432) - Primary data storage
 - **Redis Cache** (Port 6379) - Caching layer
-- **LBO API** (Port 8000) - Main financial API service
-- **Unified API** (Port 8080) - Consolidated financial data API
+- **LBO API** (Port 8100) - Public PE LBO service
+- **Unified API** (Port 8080) - Consolidated public financial data API
 
 ### Text Processing Services
 - **LBO Text Extraction** (Port 8061) - Document processing with OCR
@@ -69,7 +69,7 @@ docker-compose exec redis redis-cli ping && echo " ✓ Redis"
 
 ### Analysis Services
 - **LBO Analysis** (Port 8001) - LBO modeling and analysis
-- **VC Analysis** (Port 8005) - Venture capital analysis
+- **VC Analysis** (Port 8000) - Venture capital analysis
 
 ### AI Services
 - **AI Insights** (Ports 8010, 8020, 8030, 8040) - Market, product, financial, and sentiment analysis
